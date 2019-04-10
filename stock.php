@@ -4,13 +4,13 @@ $stocks = $argv;
 foreach ($stocks as $key => $value) {
 	$stocks[$key] = "tse_".$value.".tw";
 }
-$row = "|%5.5s | %5.5s |%11.11s |%8.8s |%8.8s |%10.10s |%10.10s |%10.10s |\n";
+$row = "|%5.5s | %5.5s |%11.11s |%8.8s |%8.8s |%10.10s |%10.10s |%10.10s |%19.19s\n";
 while (true) {
 	try {
 		$time = time();
 		$url = 'http://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch='.implode("|", $stocks).'&_='.$time;
 		echo chr(27)."[H".chr(27)."[2J";
-		printf($row, 'Code', 'Open', 'Limit Down', 'Day Low', 'Current', 'Day High', 'Limit Up', 'Time');
+		printf($row, 'Code', 'Open', 'Limit Down', 'Day Low', 'Current', 'Day High', 'Limit Up', 'Time', 'Fluctuation Rate(%)');
 
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
@@ -51,7 +51,14 @@ while (true) {
  * ]
  */
 function displayStock($data, $row) {
+	// fprintf ( STDOUT, "%s", "\x07" );
 	foreach ($data as $stock) {
-		printf($row, $stock->c, $stock->o, $stock->w, $stock->l, $stock->z, $stock->h, $stock->u, $stock->t);
+		// (float)$stock->o > (float)explode("_", $stock->a)[0]) 跌
+		// (float)$stock->o < (float)explode("_", $stock->a)[0]) 漲
+		if ((float)$stock->o > (float)explode("_", $stock->a)[0]) echo "\e[1;30;32m";
+		elseif ((float)$stock->o < (float)explode("_", $stock->a)[0]) echo "\e[1;30;31m";
+		else echo "\e[1;30;33m";
+		printf($row, $stock->c, $stock->o, $stock->w, $stock->l, $stock->z, $stock->h, $stock->u, $stock->t, number_format((100 * ((float)explode("_", $stock->a)[0] - (float)$stock->o)/(float)$stock->o), 2).'%');
+		echo "\e[0m";
 	}
 }
